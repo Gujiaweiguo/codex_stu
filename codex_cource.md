@@ -1,42 +1,150 @@
-# Codex 编程入门：配置、用法与 Go 权限后台示例
+# Codex 编程入门（VS Code 插件场景）：配置、用法与 Go 权限后台示例（MySQL 8）
 
 ## 读完可以
-- 搭好 Codex 使用环境，知道如何把上下文喂给 Codex。
-- 掌握常用对话套路：读代码、做计划、改代码、跑测试、总结。
-- 跟着脚本完成一个 Go RBAC 后台（Gin + Gorm + JWT + SQLite），含验证步骤。
+- 在 VS Code 里用 Codex 插件搭好开发环境，知道如何把上下文喂给 Codex。
+- 掌握插件场景的对话套路：读代码、做计划、改代码、跑测试、在 VS Code 看 diff、总结交付。
+- 从新建一个空目录开始，跟着脚本完成一个 Go RBAC 后台（Gin + Gorm + JWT + MySQL 8），含验证步骤。
 
 ## 1. 环境与配置
-- 安装前置：Go >= 1.20、Git、curl/httpie、rg（推荐用于搜索）；验证脚本用 `python3` 从 JSON 提取 token/id（也可用 `jq` 或手动复制）。
-- 安装 Codex CLI 并确认可用：`codex --version`（具体安装方式按官方指引）。
-- 推荐习惯：在项目根目录对话；让 Codex 先看 `go.mod`、`README`；保持分支可写或明确脏改。
-- 运行能力：能执行 `go test ./...` 和 `go run .`；如 sandbox 限制执行，手动跑并把结果贴给 Codex。
+- 安装前置：VS Code、Codex 插件、Go >= 1.20、MySQL 8（本地已装）、Git、curl/httpie、rg（推荐用于搜索）。
+- VS Code 建议：打开“工作区/文件夹”作为项目根；在集成终端跑命令；用 Source Control 面板看 diff/回滚。
+- 验证脚本：优先用 `python3` 从 JSON 提取 token/id（也可用 `jq` 或手动复制）。
+- 推荐习惯：新建目录后先 `git init`；让 Codex 先读 `AGENTS.md`（若有）、`README.md`、`go.mod`、目录结构；保持改动小步可审阅。
+- 推荐加一份项目指引：在项目根写 `AGENTS.md`，把“默认中文沟通/文档中文、修改范围、验证命令”等规则固化下来，减少反复强调。
 - 日常命令：`rg --files` 查找文件，`rg keyword` 搜索，`go list` 查看模块，`ls`/`tree` 给 Codex 看结构。
 
-## 2. 基本使用姿势（对话示例）
-- 读上下文：`请先看 go.mod 和 main.go（或 cmd/**/main.go），总结依赖和入口。`
-- 计划：`基于需求，给 3~6 步计划，包含实现与测试。`
-- 改代码：`只改 internal/auth/ 下的文件；改完解释路径和理由。`
-- 跑测试：`运行 go test ./...，贴关键失败信息。`（受限时请你自行运行并反馈）
-- 迭代：每完成一小块，就让 Codex 总结改动、风险、下一步。
-- 需要具体代码：`输出完整 main.go 代码块，并说明放在项目根目录。`
+## 2. VS Code 插件的基本用法（对话示例）
+> 插件场景的关键是“上下文”：尽量让 Codex 读到你当前工作区的关键文件；改动后用 VS Code 的 diff 审阅再继续下一步。
+
+- 读上下文（新建目录）：`这是一个新建工作区。请先看目录结构（ls/tree）+ README/go.mod（若有），总结现状并给出下一步建议。`
+- 读当前文件/选区：`请只基于我当前打开文件（以及选中的片段）分析问题并给修改建议。`
+- 计划：`基于需求给 3~6 步计划（含实现与验证），每一步写清要改哪些文件、要跑什么命令。`
+- 控制修改范围：`这一步只允许改 main.go（或指定文件列表），不要动其它文件。`
+- 跑验证：`请告诉我在 VS Code 终端要跑哪些命令验证（例如 go test ./...），以及预期输出。`
+- 迭代：每完成一小块，就让 Codex 总结“改了什么/为什么/如何验证/下一步”。
 
 ## 3. 实战：用 Codex 写 Go 权限管理后台（RBAC）
 ### 3.1 目标与技术栈
 - 提供用户注册、登录（JWT），角色与权限管理，受保护接口示例。
-- 技术：Go + Gin（HTTP）+ Gorm + SQLite（默认方便本地）+ bcrypt（密码）+ JWT。
+- 技术：Go + Gin（HTTP）+ Gorm + MySQL 8 + bcrypt（密码）+ JWT。
 
 ### 3.2 初始化项目（本地命令）
+在 VS Code 中：新建一个空文件夹并“打开文件夹”作为工作区，然后在集成终端执行：
 ```bash
 mkdir rbac-demo && cd rbac-demo
+git init
+
+# 建议：用环境变量存 MySQL DSN，把 .env 加进 .gitignore
+printf ".env\n" > .gitignore
+
 go mod init rbac-demo
-go get github.com/gin-gonic/gin gorm.io/gorm gorm.io/driver/sqlite github.com/golang-jwt/jwt/v4 golang.org/x/crypto/bcrypt
+go get github.com/gin-gonic/gin gorm.io/gorm gorm.io/driver/mysql github.com/golang-jwt/jwt/v4 golang.org/x/crypto/bcrypt
+
+# 可选：先提交一个“空项目”基线，方便后续让 Codex 小步改动
+git add .
+git commit -m "chore: init project"
 ```
+
+### 3.2.1 准备 MySQL（本地已安装）
+先确保 MySQL 8 已启动，并创建数据库（示例叫 `rbac_demo`）：
+```bash
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS rbac_demo DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;"
+```
+然后在项目根目录创建 `.env`（示例 DSN；按你本机账号密码修改）：
+```bash
+cat > .env <<'EOF'
+MYSQL_DSN=root:your_password@tcp(127.0.0.1:3306)/rbac_demo?charset=utf8mb4&parseTime=True&loc=Local
+EOF
+```
+
+### 3.2.2 （推荐）生成 `AGENTS.md`：默认中文沟通 + 中文文档
+很多 AI 编码助手会自动读取项目根的 `AGENTS.md`，把它当作“项目内的固定规则”。建议你在新建目录后就生成一份（按需再改）：
+```bash
+cat > AGENTS.md <<'EOF'
+<INSTRUCTIONS>
+# 项目协作指引（偏灵活）
+
+## 语言
+- 默认用中文沟通与写文档；除非我明确要求英文/双语。
+
+## 范围
+- 未明确要求时，优先只修改当前项目目录下的文件；避免大重写，尽量小步提交。
+- 未明确要求时，不自动 `git commit`/`git push`。
+
+## 安全
+- 不要把密码、token、私钥、MySQL DSN 等敏感信息写进仓库；建议通过环境变量/`.env` 注入，并确保 `.env` 已加入 `.gitignore`。
+
+## 交付与验证
+- 改到命令/代码片段时，尽量给出最小验证路径（例如：`go test ./...`、`go run .` + 一段 curl 验证）。
+- 输出时优先给可执行步骤/结论，再补必要解释；引用文件请带路径（必要时带行号）。
+</INSTRUCTIONS>
+EOF
+```
+
+### 3.2.3 （可选）配置 MCP：让插件接入外部工具/数据源
+MCP（Model Context Protocol）可以把“外部系统的能力”以标准方式提供给 Codex，例如：文件系统、GitHub、浏览器自动化等（取决于你接入的 MCP Server，以及你使用的 Codex 插件/运行方式是否支持 MCP）。
+
+如果你用的是 Codex CLI（而不是/不只是 VS Code 插件），可以用 `codex mcp ...` 管理 MCP Server（实验性）：`add/list/get/remove`。
+
+先用一句话理解 MCP：
+- **MCP Server**：一个“工具提供者”进程（本地起一个命令，或远程 HTTP 服务）。
+- **Codex（客户端）**：把 Server 提供的能力注册成可调用的工具（tools），并在对话中按需调用。
+
+示例：接入一个“文件系统 MCP Server”（Node 版），把某个目录暴露给 MCP（会写入 `~/.codex/config.toml`）：
+```bash
+codex mcp add filesystem -- npx -y @modelcontextprotocol/server-filesystem "$(pwd)"
+codex mcp list
+codex mcp get filesystem
+codex mcp remove filesystem
+```
+
+#### 一个真正“跑得出来”的 MCP 最小例子（推荐按这个做一遍）
+上面用 `$(pwd)` 作为目录时，你可能感觉“没变化”（因为 Codex 本来就能读你工作区里的文件）。所以这里故意用一个**工作区外**的目录做演示：在 `workspace-write` 沙箱下，Codex 默认不该直接读取 `/tmp`，只有通过你接入的 MCP 工具才有机会读到。
+
+前置：本机有 `node`/`npx`（Node 20+ 更稳）：
+```bash
+node -v
+npx -v
+```
+
+1) 准备一个工作区外的目录与文件：
+```bash
+mkdir -p /tmp/mcp-demo
+cat > /tmp/mcp-demo/hello.txt <<'EOF'
+hello from mcp
+EOF
+```
+
+2) 注册一个 MCP Server（stdio 方式）：
+```bash
+codex mcp add demo-fs -- npx -y @modelcontextprotocol/server-filesystem /tmp/mcp-demo
+codex mcp get demo-fs
+```
+
+3) 让 Codex **明确使用**这个 MCP 工具来读文件（示例用非交互 `codex exec`；你也可以直接开交互 `codex` 再粘贴同样的提示词）：
+```bash
+codex exec -s workspace-write "请使用 MCP 工具 demo-fs：列出根目录有哪些文件，然后读取 hello.txt，把文件内容原样打印出来。最后说明你调用了哪个工具完成的。"
+```
+
+4) 用完就移除（避免长期暴露目录）：
+```bash
+codex mcp remove demo-fs
+```
+
+> 你也可以不通过 `codex mcp add`，直接手动在 `~/.codex/config.toml` 配置（格式大致如下）：
+```toml
+[mcp_servers.demo-fs]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-filesystem", "/tmp/mcp-demo"]
+```
+
+注意：MCP Server 可能拥有较高权限（读写文件、访问网络/第三方 API 等）。只添加你信任的 Server，并优先用环境变量/`.env` 传递凭证，避免写进仓库。
 
 ### 3.3 跟 Codex 的对话脚本
 1) 读取上下文  
-`这是 Go RBAC 小项目，依赖 Gin/Gorm/SQLite/JWT。先看 go.mod，确认依赖是否齐全，再给出骨架设计。`
+`这是一个从零开始的新目录（已 git init + go mod init）。目标是做 Go RBAC 小项目（Gin/Gorm/MySQL8/JWT）。请先看目录结构、go.mod、README（若有），确认依赖与入口建议，再给出骨架设计与下一步计划。`
 2) 生成骨架  
-`创建 main.go，包含：DB 初始化（SQLite）、模型 User/Role/Permission、路由注册、基础中间件。`
+`创建 main.go，包含：DB 初始化（MySQL）、模型 User/Role/Permission、路由注册、基础中间件。`
 3) 实现认证与授权  
 `补充 /signup /login，使用 bcrypt + JWT；写 authMiddleware 解析 Bearer Token；写 requirePerm(perms...) 校验权限。`
 4) 角色与权限管理  
@@ -47,7 +155,7 @@ go get github.com/gin-gonic/gin gorm.io/gorm gorm.io/driver/sqlite github.com/go
 `运行 go run . 后提供 curl 验证脚本；如需测试用例，帮忙加一两个 handler 的单测。`
 
 ### 3.4 参考代码（最小可跑示例）
-将以下内容保存为 `main.go`（可让 Codex 直接生成文件）：
+将以下内容保存为 `main.go`（更推荐让 Codex 按 3.3 小步生成，下面可作为对照）：
 ```go
 package main
 
@@ -55,6 +163,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -62,7 +171,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
@@ -112,7 +221,8 @@ func main() {
 }
 
 func initDB() *gorm.DB {
-	db, err := gorm.Open(sqlite.Open("rbac.db"), &gorm.Config{})
+	dsn := getenv("MYSQL_DSN", "root:password@tcp(127.0.0.1:3306)/rbac_demo?charset=utf8mb4&parseTime=True&loc=Local")
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -457,6 +567,13 @@ func hashPassword(pw string) (string, error) {
 	}
 	return string(hash), nil
 }
+
+func getenv(key, fallback string) string {
+	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
+		return v
+	}
+	return fallback
+}
 ```
 
 ### 3.5 运行与验证（手动或让 Codex 协助）
@@ -508,4 +625,4 @@ curl -s -H "Authorization: Bearer $USER_TOKEN" http://localhost:8080/me
 - 依赖缺失：运行 `go mod tidy`；若失败，把错误贴给 Codex。
 - 端口占用：修改 `r.Run(":8080")` 的端口或释放占用进程。
 - 权限不足：确认使用管理员 token；或在 seed 阶段新增自己的初始用户。
-- SQLite 文件权限：确保运行目录可写，或改用内存 `sqlite.Open(":memory:")`。
+- MySQL 连接失败：确认 MySQL 服务已启动、账号有权限、DSN 正确（尤其是 `parseTime=True`），以及数据库（如 `rbac_demo`）已创建。
