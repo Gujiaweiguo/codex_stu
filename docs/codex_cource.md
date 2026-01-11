@@ -23,6 +23,75 @@
 - 跑验证：`请告诉我在 VS Code 终端要跑哪些命令验证（例如 go test ./...），以及预期输出。`
 - 迭代：每完成一小块，就让 Codex 总结“改了什么/为什么/如何验证/下一步”。
 
+### 2.1 推荐：计划 → 确认 → 分步执行（更像“计划模式”）
+把下面模板直接粘到 VS Code 插件对话里用（适合你这个 Go RBAC 案例，能显著减少跑偏和大改动）。
+
+1) 先只产出计划（不写代码）：
+```text
+先不要写代码。请先阅读当前工作区关键文件（AGENTS.md/README/go.mod/目录结构），然后给出 3~6 步计划。
+要求：每一步写清（要改哪些文件、要新增哪些接口/结构、要跑什么命令验证、预期结果）。
+我回复“开始第 1 步”后你再实现。
+```
+
+2) 开始某一步（带范围约束）：
+```text
+开始第 1 步。这一步只允许改这些文件：<填文件列表>。
+实现完成后只交付：改动摘要 + VS Code diff 审阅要点 + 最小验证命令（含预期输出）。
+如果发现计划需要调整，先停下来说明原因并给出更新后的计划，再等我确认。
+```
+
+3) 每步收尾复盘（强制可复现）：
+```text
+请用 5 行内总结：这一步改了什么/为什么/如何验证/可能风险/下一步做什么。
+```
+
+### 2.2 一组高性价比“提示词模板”（不靠运气，减少返工）
+下面这些不需要每次全用：按场景挑一条粘贴就行。
+
+**只诊断不动手（先定位再修改）**
+```text
+先不要改代码。请只基于我当前打开文件/我粘贴的日志，定位问题可能原因，给 3 个最可能的根因与各自的验证方法。
+确认根因后我再让你改。
+```
+
+**先复述需求与约束（防止跑偏）**
+```text
+在开始前请先复述：需求目标、明确约束（不能改哪些文件/不能引入哪些依赖/是否允许联网）、以及你准备修改的文件列表。
+如果有任何不确定点，先提 1–3 个问题再继续。
+```
+
+**最小改动 + 可审阅（避免大重构）**
+```text
+请做“最小且合理”的改动：优先补缺/修错，不做无关重构、不改命名、不移动文件。
+改完请给：改动文件列表 + 每个文件一句话说明 + 需要我在 VS Code diff 重点看的 3 个点。
+```
+
+**强制范围约束（只改指定文件）**
+```text
+这一步只允许改这些文件：<填文件列表>。如果必须新增文件，请先说明原因并等我确认。
+```
+
+**交付必须带可复现验证**
+```text
+改完请给出在 VS Code 集成终端可直接复制的验证命令（包含预期输出/成功标准）。
+如果需要我先准备环境（MySQL/环境变量），请列清单。
+```
+
+**提供回滚/撤销（方便你大胆试）**
+```text
+如果这一步改坏了，请给出回滚方式（例如用 git restore/checkout 恢复哪些文件），并说明回滚会影响哪些改动。
+```
+
+**出现报错时如何喂上下文（提高一次命中率）**
+```text
+我将粘贴：报错日志 + 复现步骤 + 相关文件片段。你先给出最小复现与最小修复方案，再给出具体修改。
+```
+
+**需要查资料/用外部工具时先征求确认**
+```text
+如果你需要查官方文档/仓库/Issue，先说明你准备查哪里、要解决什么问题，再等我确认是否允许（或是否启用 MCP）。
+```
+
 ## 3. 实战：用 Codex 写 Go 权限管理后台（RBAC）
 ### 3.1 目标与技术栈
 - 提供用户注册、登录（JWT），角色与权限管理，受保护接口示例。
@@ -62,21 +131,21 @@ EOF
 ```bash
 cat > AGENTS.md <<'EOF'
 <INSTRUCTIONS>
-# 项目协作指引（偏灵活）
+# Project Collaboration Guide (Flexible)
 
-## 语言
-- 默认用中文沟通与写文档；除非我明确要求英文/双语。
+## Language
+- Default to communicating and writing docs in Chinese, unless I explicitly request English/bilingual.
 
-## 范围
-- 未明确要求时，优先只修改当前项目目录下的文件；避免大重写，尽量小步提交。
-- 未明确要求时，不自动 `git commit`/`git push`。
+## Scope
+- Unless explicitly requested, prefer modifying only files under the current project directory; avoid large rewrites and keep changes in small steps.
+- Unless explicitly requested, do not automatically `git commit`/`git push`.
 
-## 安全
-- 不要把密码、token、私钥、MySQL DSN 等敏感信息写进仓库；建议通过环境变量/`.env` 注入，并确保 `.env` 已加入 `.gitignore`。
+## Safety
+- Do not write sensitive information into the repo (passwords, tokens, private keys, MySQL DSNs, etc.); prefer injecting via environment variables/`.env`, and make sure `.env` is included in `.gitignore`.
 
-## 交付与验证
-- 改到命令/代码片段时，尽量给出最小验证路径（例如：`go test ./...`、`go run .` + 一段 curl 验证）。
-- 输出时优先给可执行步骤/结论，再补必要解释；引用文件请带路径（必要时带行号）。
+## Delivery and Verification
+- If you touch commands/code snippets, provide a minimal verification path (e.g., `go test ./...`, `go run .` + a `curl` check).
+- In output, prioritize executable steps/conclusions first, then only the necessary explanation; when referencing files, include paths (and line numbers when needed).
 </INSTRUCTIONS>
 EOF
 ```
@@ -99,7 +168,7 @@ codex mcp remove filesystem
 ```
 
 #### 一个真正“跑得出来”的 MCP 最小例子（推荐按这个做一遍）
-上面用 `$(pwd)` 作为目录时，你可能感觉“没变化”（因为 Codex 本来就能读你工作区里的文件）。所以这里故意用一个**工作区外**的目录做演示：在 `workspace-write` 沙箱下，Codex 默认不该直接读取 `/tmp`，只有通过你接入的 MCP 工具才有机会读到。
+上面用 `$(pwd)` 作为目录时，你可能感觉“没变化”（因为 Codex 本来就能读你工作区里的文件）。所以这里故意用一个**工作区外**的目录做演示：在 `workspace-write` 沙箱下，Codex 默认不该直接读取 `$HOME` 下的工作区外目录（或其它工作区外路径），只有通过你接入的 MCP 工具才有机会读到。
 
 前置：本机有 `node`/`npx`（Node 20+ 更稳）：
 ```bash
@@ -109,15 +178,16 @@ npx -v
 
 1) 准备一个工作区外的目录与文件：
 ```bash
-mkdir -p /tmp/mcp-demo
-cat > /tmp/mcp-demo/hello.txt <<'EOF'
+mkdir -p "$HOME/mcp-demo"
+cat > "$HOME/mcp-demo/hello.txt" <<'EOF'
 hello from mcp
 EOF
 ```
+如果你只是临时演示，用 `/tmp/mcp-demo` 也可以（可能会被系统清理）。
 
 2) 注册一个 MCP Server（stdio 方式）：
 ```bash
-codex mcp add demo-fs -- npx -y @modelcontextprotocol/server-filesystem /tmp/mcp-demo
+codex mcp add demo-fs -- npx -y @modelcontextprotocol/server-filesystem "$HOME/mcp-demo"
 codex mcp get demo-fs
 ```
 
@@ -135,8 +205,9 @@ codex mcp remove demo-fs
 ```toml
 [mcp_servers.demo-fs]
 command = "npx"
-args = ["-y", "@modelcontextprotocol/server-filesystem", "/tmp/mcp-demo"]
+args = ["-y", "@modelcontextprotocol/server-filesystem", "/home/your_name/mcp-demo"]
 ```
+把 `/home/your_name` 替换成你机器上的实际 HOME 路径（可用 `echo "$HOME"` 查看）。
 
 注意：MCP Server 可能拥有较高权限（读写文件、访问网络/第三方 API 等）。只添加你信任的 Server，并优先用环境变量/`.env` 传递凭证，避免写进仓库。
 

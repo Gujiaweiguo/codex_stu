@@ -1,35 +1,39 @@
 <INSTRUCTIONS>
-# 仓库协作指引（偏灵活）
+# Repository Collaboration Guide (Flexible)
 
-## 仓库定位
-- 本仓库主要是 Codex 使用与项目开发的学习笔记/教程（Markdown 为主）。
-- 优先提升：表达清晰、步骤可复现、命令/代码可复制粘贴可用。
+## Repository Purpose
+- This repository is mainly a set of study notes/tutorials for using Codex and doing project development (mostly Markdown).
+- Priorities: clear explanations, reproducible steps, and commands/code that can be copy-pasted and used directly.
 
-## 默认工作流
-1) 先阅读相关 Markdown（通常是 `README.md` 和/或 `codex_cource.md`）。
-2) 只有在必要时才提 1–3 个澄清问题；否则做“最小且合理”的改动。
-3) 修改代码片段时，尽量在临时目录做编译/运行验证；依赖保持最少。
+## Default Workflow
+1) Read the relevant Markdown first (usually `README.md` and/or `docs/codex_cource.md`).
+2) Only ask 1–3 clarifying questions when necessary; otherwise make the “smallest reasonable” change.
+3) When modifying code snippets, try to compile/run-verify in a temporary directory; keep dependencies minimal.
 
-## 范围与安全
-- 未明确要求时，优先只修改 Markdown 和 `image/` 下的资源。
-- 避免大重写；改动要聚焦、可回滚、可审阅。
-- 未明确要求时，不引入新的工具链/格式化器。
-- 未明确要求时，不自动 `git commit`/`git push`。
-- 不要把密码、token、私钥、DSN 等敏感信息写进仓库；示例里用占位符或建议通过环境变量/`.env`（并确保已加入 `.gitignore`）。
+## Scope and Safety
+- Unless explicitly requested, prefer modifying only Markdown and assets under `image/`.
+- Avoid large rewrites; keep changes focused, reversible, and easy to review.
+- Unless explicitly requested, do not introduce new toolchains/formatters.
+- Unless explicitly requested, do not automatically `git commit`/`git push`.
+- Do not write sensitive information into the repo (passwords, tokens, private keys, DSNs, etc.); use placeholders in examples or recommend environment variables/`.env` (and make sure it is included in `.gitignore`).
 
-## 语言与风格
-- 默认用中文沟通与写文档；除非用户明确要求英文/双语。
-- 命令与代码用 fenced code blocks（```）展示。
-- Shell 示例里优先用 `python3` 做简单 JSON 字段提取（假设可能没有 `jq`），但可顺带提及 `jq` 作为可选方案。
-- 表达尽量简洁：先给可执行步骤/结论，再补必要背景；避免长篇泛泛解释。
-- 引用文件时尽量带路径（必要时带行号），方便定位。
+## Language and Style
+- Default to communicating and writing docs in Chinese, unless the user explicitly requests English/bilingual.
+- Show commands and code in fenced code blocks (```).
+- In shell examples, prefer using `python3` for simple JSON field extraction (assuming `jq` may not be installed), while optionally mentioning `jq` as an alternative.
+- Keep writing concise: provide executable steps/conclusions first, then only the necessary background; avoid long, generic explanations.
+- When referencing files, include paths (and line numbers when needed) to make navigation easier.
 
-## 对话与改动约定（建议）
-- 当用户说“从零开始”时：优先按“新建目录 → `git init` → 初始化依赖 → 小步实现 → 验证”来组织步骤。
-- 当用户要“仔细检查”文档：重点检查可复制命令、依赖版本、前置条件（例如是否需要 `python3/jq/mysql`）、以及示例是否可跑通。
-- 当需要执行命令：优先读/验证命令；写入/安装类命令在执行前先说明会改什么、影响什么。
+## Conversation and Change Conventions (Suggested)
+- When the user says “from scratch”: prefer organizing steps as “create new directory → `git init` → initialize dependencies → implement in small steps → verify”.
+- When the user asks to “carefully review” documentation: focus on copy-pastable commands, dependency versions, prerequisites (e.g., whether `python3/jq/mysql` is needed), and whether examples can actually run.
+- When a command needs to be executed: prefer reading/verifying it first; for write/install commands, explain what will change and the impact before running them.
+- Default to a “plan → confirmation → step-by-step execution” workflow: propose a 3–6 step plan (each step: which files to change + how to verify + expected result), then wait for the user to confirm “start step N” before editing code/docs.
+- During step-by-step execution, follow “scope constraints”: if the user specifies a file list, modify only those files; otherwise propose the smallest reasonable set of files and explain why.
+- If the plan needs adjustment, pause implementation first: explain why, provide an updated plan, and wait for confirmation.
+- Each step’s delivery includes: change summary, review points (diff/risk), minimal verification commands (with expected output), and next-step suggestions.
 
-## 验证与交付
-- 只要改到命令/代码片段，尽量给出最小验证路径（例如：`go test ./...`、`go run .` + 一段 curl 验证）。
-- 交付时简要列出改动文件与关键点；不要粘贴大段重复内容。
+## Verification and Delivery
+- If you touch commands/code snippets, provide a minimal verification path (e.g., `go test ./...`, `go run .` + a `curl` check).
+- When delivering, briefly list changed files and key points; don’t paste large blocks of repeated content.
 </INSTRUCTIONS>
