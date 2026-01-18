@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply transition-colors duration-300;
+  }
+  .dark body {
+    @apply bg-gray-900 text-gray-100;
+  }
+  body {
+    @apply bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800 min-h-screen;
+  }
+}
+
+@layer components {
+  .todo-item {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .todo-item-enter-active,
+  .todo-item-leave-active {
+    @apply transition-all duration-300;
+  }
+
+  .todo-item-enter-from {
+    @apply opacity-0 -translate-x-4;
+  }
+
+  .todo-item-leave-to {
+    @apply opacity-0 translate-x-4;
+  }
+
+  .checkbox-custom {
+    @apply appearance-none w-6 h-6 border-2 border-primary-500 rounded-full cursor-pointer
+           transition-all duration-200 flex items-center justify-center;
+  }
+
+  .checkbox-custom:checked {
+    @apply bg-primary-500;
+  }
+
+  .checkbox-custom:checked::after {
+    content: '✓';
+    @apply text-white text-sm font-bold;
+  }
+
+  .glass-card {
+    @apply backdrop-blur-lg bg-white/70 dark:bg-gray-800/70 shadow-xl
+           border border-white/20 dark:border-gray-700/50;
+  }
+}

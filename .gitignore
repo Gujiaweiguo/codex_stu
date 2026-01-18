@@ -13,3 +13,31 @@ build/
 *.log
 .env
 .env.local
+
+# Claude AI
+.claude.json
+.claude/
+
+# Screenshots / images
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.ico
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+venv/
+.venv/
+*.egg-info/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
